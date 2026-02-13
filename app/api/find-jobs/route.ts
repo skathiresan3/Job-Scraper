@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import * as cheerio from "cheerio";
 import { Resend } from "resend";
 
-const resend = new Resend(process.env.resend_api);
+
 
 export async function GET(req: Request) {
 
@@ -11,6 +11,7 @@ export async function GET(req: Request) {
     // if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
     //   return new Response("Unauthorized", { status: 401 });
     // }
+    const resend = new Resend(process.env.resend_api);
   
 
     // URL for scraping jobs
