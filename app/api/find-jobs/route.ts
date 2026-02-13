@@ -6,11 +6,11 @@ const resend = new Resend(process.env.resend_api);
 
 export async function GET(req: Request) {
 
-    const authHeader = req.headers.get("authorization");
+    // const authHeader = req.headers.get("authorization");
 
-    if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-      return new Response("Unauthorized", { status: 401 });
-    }
+    // if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+    //   return new Response("Unauthorized", { status: 401 });
+    // }
   
 
     // URL for scraping jobs
