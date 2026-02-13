@@ -4,14 +4,19 @@ import { Resend } from "resend";
 
 const resend = new Resend(process.env.resend_api);
 
-export async function GET() {
+export async function GET(req: Request) {
+
+    const authHeader = req.headers.get("authorization");
+
+    if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+      return new Response("Unauthorized", { status: 401 });
+    }
+  
 
     // URL for scraping jobs
     const response = fetch("https://github.com/SimplifyJobs/New-Grad-Positions");
     const html = await (await response).text();
     
-    console.log("JOBS ARE HERE: ", html);
-      // 2. Load into Cheerio
     const $ = cheerio.load(html);
 
 
@@ -36,7 +41,7 @@ export async function GET() {
         roleLower.includes("backend") ||
         roleLower.includes("full stack") ||
         roleLower.includes("fullstack");
-        if (age === "0d" && isSoftware) {
+        if ((age === "0d") && isSoftware) {
           jobs.push({
             company,
             role,
