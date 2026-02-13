@@ -11,7 +11,7 @@ export async function GET(req: Request) {
     // if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
     //   return new Response("Unauthorized", { status: 401 });
     // }
-    const resend = new Resend(process.env.resend_api);
+    const resend = new Resend(process.env.RESEND_API_KEY);
   
 
     // URL for scraping jobs
@@ -74,7 +74,7 @@ export async function GET(req: Request) {
           <hr/>
         `).join("");
       
-        await resend.emails.send({
+        const {data, error} = await resend.emails.send({
           from: "onboarding@resend.dev", // change later to verified domain
           to: "sachin.kathir.123@gmail.com",
           subject: `🚨 ${jobs.length} New SWE Jobs Posted Today`,
@@ -86,6 +86,7 @@ export async function GET(req: Request) {
             </div>
           `
         });
+        console.log("EMAIL RES: ", {data, error});
       
       }
       
