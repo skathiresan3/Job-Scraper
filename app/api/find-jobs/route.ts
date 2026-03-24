@@ -1,13 +1,24 @@
 import * as cheerio from "cheerio";
 import { Resend } from "resend";
-import { Redis } from "@upstash/redis";
+
+async function redisCommand(command: (string | number)[]) {
+  const res = await fetch(process.env.UPSTASH_REDIS_REST_URL!, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${process.env.UPSTASH_REDIS_REST_TOKEN}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(command),
+    cache: "no-store",
+  });
+  return res.json();
+}
 
 export async function GET(req: Request) {
     try {
     // auth temporarily disabled for debugging
 
     const resend = new Resend(process.env.RESEND_API_KEY);
-    const redis = Redis.fromEnv();
   
 
     // URL for scraping jobs
@@ -52,14 +63,15 @@ export async function GET(req: Request) {
       // Deduplicate: only email jobs we haven't seen before
       const today = new Date().toISOString().split("T")[0];
       const kvKey = `seen-jobs:${today}`;
-      const seenLinks: string[] = (await redis.get<string[]>(kvKey)) ?? [];
+      const getResult = await redisCommand(["GET", kvKey]);
+      const seenLinks: string[] = getResult.result ? JSON.parse(getResult.result) : [];
       const seenSet = new Set(seenLinks);
 
       const newJobs = jobs.filter(job => job.applyLink && !seenSet.has(job.applyLink));
 
       if (newJobs.length > 0) {
         const updatedSeen = [...seenSet, ...newJobs.map((j: any) => j.applyLink)];
-        await redis.set(kvKey, updatedSeen, { ex: 60 * 60 * 48 });
+        await redisCommand(["SET", kvKey, JSON.stringify(updatedSeen), "EX", 60 * 60 * 48]);
 
         const jobListHTML = newJobs.map((job: any) => `
           <div style="margin-bottom: 20px;">
