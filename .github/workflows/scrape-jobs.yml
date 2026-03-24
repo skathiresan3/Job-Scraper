@@ -11,5 +11,5 @@ jobs:
     steps:
       - name: Call job scraper
         run: |
-          curl -f -X GET "${{ secrets.VERCEL_URL }}/api/find-jobs" \
+          curl -v -X GET "${{ secrets.VERCEL_URL }}/api/find-jobs" \
             -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"
