@@ -7,10 +7,7 @@ export async function GET(req: Request) {
     // auth temporarily disabled for debugging
 
     const resend = new Resend(process.env.RESEND_API_KEY);
-    const redis = new Redis({
-      url: process.env.UPSTASH_REDIS_REST_URL!,
-      token: process.env.UPSTASH_REDIS_REST_TOKEN!,
-    });
+    const redis = Redis.fromEnv();
   
 
     // URL for scraping jobs
