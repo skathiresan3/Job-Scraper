@@ -1,17 +1,18 @@
-import { NextResponse } from "next/server";
 import * as cheerio from "cheerio";
 import { Resend } from "resend";
-
-
+import { Redis } from "@upstash/redis";
 
 export async function GET(req: Request) {
+    const authHeader = req.headers.get("authorization");
+    if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+      return new Response("Unauthorized", { status: 401 });
+    }
 
-    // const authHeader = req.headers.get("authorization");
-
-    // if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-    //   return new Response("Unauthorized", { status: 401 });
-    // }
     const resend = new Resend(process.env.RESEND_API_KEY);
+    const redis = new Redis({
+      url: process.env.UPSTASH_REDIS_REST_URL!,
+      token: process.env.UPSTASH_REDIS_REST_TOKEN!,
+    });
   
 
     // URL for scraping jobs
@@ -53,9 +54,19 @@ export async function GET(req: Request) {
         }
       });
 
-      if (jobs.length > 0) {
+      // Deduplicate: only email jobs we haven't seen before
+      const today = new Date().toISOString().split("T")[0];
+      const kvKey = `seen-jobs:${today}`;
+      const seenLinks: string[] = (await redis.get<string[]>(kvKey)) ?? [];
+      const seenSet = new Set(seenLinks);
 
-        const jobListHTML = jobs.map(job => `
+      const newJobs = jobs.filter(job => job.applyLink && !seenSet.has(job.applyLink));
+
+      if (newJobs.length > 0) {
+        const updatedSeen = [...seenSet, ...newJobs.map((j: any) => j.applyLink)];
+        await redis.set(kvKey, updatedSeen, { ex: 60 * 60 * 48 });
+
+        const jobListHTML = newJobs.map((job: any) => `
           <div style="margin-bottom: 20px;">
             <h3 style="margin: 0;">${job.company}</h3>
             <p style="margin: 4px 0;"><strong>${job.role}</strong></p>
@@ -74,22 +85,20 @@ export async function GET(req: Request) {
           <hr/>
         `).join("");
       
-        const {data, error} = await resend.emails.send({
-          from: "onboarding@resend.dev", // change later to verified domain
+        await resend.emails.send({
+          from: "onboarding@resend.dev",
           to: "sachin.kathir.123@gmail.com",
-          subject: `🚨 ${jobs.length} New SWE Jobs Posted Today`,
+          subject: `🚨 ${newJobs.length} New SWE Jobs Posted`,
           html: `
             <div style="font-family: Arial, sans-serif;">
               <h2>New SWE Jobs (0d)</h2>
-              <p>These were posted today. Apply immediately.</p>
+              <p>These were just posted. Apply immediately.</p>
               ${jobListHTML}
             </div>
           `
         });
-        console.log("EMAIL RES: ", {data, error});
-      
       }
       
     
-      return Response.json(jobs);
+      return Response.json({ total: jobs.length, new: newJobs.length, jobs: newJobs });
 }

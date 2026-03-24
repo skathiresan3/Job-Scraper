@@ -1,0 +1,15 @@
+name: Scrape Jobs
+
+on:
+  schedule:
+    - cron: "*/30 * * * *"
+  workflow_dispatch: # allow manual runs from GitHub UI
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call job scraper
+        run: |
+          curl -f -X GET "${{ secrets.VERCEL_URL }}/api/find-jobs" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"

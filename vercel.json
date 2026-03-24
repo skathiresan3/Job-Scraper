@@ -1,6 +1,1 @@
-{
-    "crons": [{
-      "path": "/api/find-jobs",
-      "schedule": "0 17 * * *"
-    }]
-  }
+{}
