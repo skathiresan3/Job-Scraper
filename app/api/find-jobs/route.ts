@@ -3,6 +3,7 @@ import { Resend } from "resend";
 import { Redis } from "@upstash/redis";
 
 export async function GET(req: Request) {
+    try {
     // auth temporarily disabled for debugging
 
     const resend = new Resend(process.env.RESEND_API_KEY);
@@ -98,4 +99,7 @@ export async function GET(req: Request) {
       
     
       return Response.json({ total: jobs.length, new: newJobs.length, jobs: newJobs });
+    } catch (e: any) {
+      return Response.json({ error: e.message }, { status: 500 });
+    }
 }
