@@ -17,11 +17,11 @@ async function redisCommand(command: (string | number)[]) {
 export async function GET(req: Request) {
     try {
     // auth temporarily disabled for debugging
+    const upstashKeys = Object.keys(process.env).filter(k => k.includes("UPSTASH") || k.includes("upstash"));
     return Response.json({
+      upstashKeys,
       hasRedisUrl: !!process.env.UPSTASH_REDIS_REST_URL,
       hasRedisToken: !!process.env.UPSTASH_REDIS_REST_TOKEN,
-      hasResend: !!process.env.RESEND_API_KEY,
-      hasCronSecret: !!process.env.CRON_SECRET,
     });
 
     const resend = new Resend(process.env.RESEND_API_KEY);
